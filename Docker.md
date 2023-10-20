@@ -86,21 +86,109 @@ Docker利用容器技术，独立运行一个或则一个组应用，容器通�
 
 ### 2.5 Docker底层原理
 
-#### 2.5.1 Docker是怎么工作的
+#### 2.5.1 Docker内部构建
 
-Docker是一个Client-Server结构的系统，Docker的守护进程在主机上，通过socket从客户端访问
+* Docker镜像（image）
 
-DockerServer接收到Docker-Client的指令，就会执行该命令
+  Docker镜像是一个只读的模版。一个镜像可以包含完整的ubuntu操作系统环境，里面仅安装了apache（web服务器）或用户需要的其他应用程序。镜像可以用来创建Docker容器，另外，Docker提供一个很简单的机制来创建镜像或则更新现有的镜像，可以直接从docker hub或其他人下载镜像直接使用
 
-<img src="./images/截屏2023-10-18 21.07.44.png" alt="截屏2023-10-18 21.07.44" style="zoom: 33%;" />
+* Docker容器（container）
 
-#### 2.5.2 Docker为什么比VM快
+  Docker利用容器来运行应用。容器是从镜像创建的运行实例（类似类对象和类的关系），容器可以被启动，开始，停止，删除。每个容器之间相互隔离、保证平台的安全性。容器可以看作是一个简易版的Linux环境（包括root用户权限，进程空间，用户空间和网络空间）和运行在其中的应用程序
 
-1.Docker有着比虚拟机更少的抽象层
+* Docker仓库（repository）
 
-2.Docker利用的是主机的内核，VM需要Guest OS。VM需要重新加载一个操作系统内核，有复杂引导过程；新建容器时，Docker直接使用主机操作系统，省略了复杂的引导过程
+  仓库是几种存放镜像文件的场所。区别于仓库注册服务器（Registry），仓库注册服务器上一般存在多个仓库，每个仓库中包含多个镜像，每个镜像有不同的标签（TAG）。仓库注册服务器可以理解为Github类似的托管服务
 
-![R-C](./images/R-C.png)
+  仓库分为私有仓库和公有仓库，最大的仓库为docker hub。用户可以通过本地网络创建一个私有仓库。当用户创建了自己的镜像可以使用push命令上其上传到仓库，下一次其他机器使用时，直接使用pull命令从仓库下载即可
+
+#### 2.5.2 Docker总体架构分解
+
+![image-20231020223938949](./images/image-20231020223938949.png)
+
+* Docker Client
+
+  Docker Client是Docker架构中用户用来和Docker Daemon建立通信的客户端。用户可以使用的可执行文件为docker，通过docker命令行工具可以发起管理container的请求
+
+  Docker Client可以通过一下三种方式和Docker daemon建立通信:
+
+  * tcp://hostport
+  * unix://path_to_socket
+  * fd://socktfd
+
+  Docker Client于Docker Daemon建立连接并传输请求的时候，Docker Client可以通过设置命令行flag参数的形式设置安全传输层协议（TLS）参数，保证传输的安全性
+
+  Docker Client发出容器管理请求后，由Docker Daemon接受并处理。当Docker Client接受到返回的请求响应，Docker Client一次完整的生命周期就结束了。当需要继续发送容器管理请求时，用户必须再次通过docker可执行文件创建Docker Client
+
+* Docker Daemon
+
+  Docker Daemon是Docker架构中常驻在后台的系统进程，功能是接受并处理Docker Client发送的请求。该守护进程在后台启动一个Server，Server负责接受Docker Client发送的请求，Server用过路由分发调度，找到相应的Handler来执行请求
+
+  Docker Daemon启动所使用的可执行文件也为docker，与Docker Client启动所使用的可执行文件docker相同。docker在执行命令时，通过传入参数来判断Docker Daemon和Docker Client
+
+  Docker Daemon的架构，大致分为Docker Server、Engine、Job
+
+* Docker Server
+
+  在Docker架构中专门服务于Docker Client。接受并调度分发Docker Client发送的请求。Docker启动过程中，通过包gorilla/mux，创建一个`mux.router`，提供请求的理由功能。该`mux.router`中添加了很多的路由项，每个路由项由HTTP请求方法、URL、Handler三部分组成。若`Docker Client`通过HTTP的形式访问Docker Daemon，创建完`mux.Router`之后，Docker将Server的监听地址以及`mux.Router`作为参数，创建一个`httpSrv=http.Server{}`，最终执行`httpSrv.Serve()`为请求服务。在Server的服务过程中，Server在listener上接受Docker Client的访问请求，并创建一个全新的goroutine来服务该请求。在goroutine中，首先读取请求内容，然后做解析工作，接着找到相应的路由项，随后调用相应的Handler来处理该请求，最后Handler处理完请求之后回复该请求。
+
+  **需要注意的是：**Docker Server的运行在Docker的启动过程中，是靠一个名为`”serveapi”`的job的运行来完成的。原则上，**Docker Server的运行是众多job中的一个**，但是为了强调Docker Server的重要性以及为后续job服务的重要特性，将该”serveapi”的job单独抽离出来分析，理解为Docker Server
+
+* Engine
+
+  Engine是Docker架构中的运行引擎，同时也Docker运行的核心模块。它扮演Docker container存储仓库的角色，并且通过执行job的方式来操纵管理这些容器。
+
+  在Engine数据结构的设计与实现过程中，有一个handler对象。该handler对象存储的都是关于众多特定job的handler处理访问。举例说明，Engine的handler对象中有一项为：`{“create”: daemon.ContainerCreate}`，则说明当名为”create”的job在运行时，执行的是`daemon.ContainerCreate的handler`。
+
+* Job
+
+  一个Job可以认为是Docker架构中**Engine内部最基本的工作执行单元**。Docker可以做的每一项工作，都可以抽象为一个job。例如：在容器内部运行一个进程，这是一个job；创建一个新的容器，这是一个job，从Internet上下载一个文档，这是一个job；包括之前在Docker Server部分说过的，创建Server服务于HTTP的API，这也是一个job，等等。
+
+  Job的设计者，把Job设计得与Unix进程相仿。比如说：Job有一个名称，有参数，有环境变量，有标准的输入输出，有错误处理，有返回状态等。
+
+* Docker Registry
+
+  Docker Registry是一个存储容器镜像的仓库。而容器镜像是在容器被创建时，被加载用来初始化容器的文件架构与目录。
+
+  在Docker的运行过程中，Docker Daemon会与Docker Registry通信，并实现搜索镜像、下载镜像、上传镜像三个功能，这三个功能对应的job名称分别为”search”，”pull” 与 “push”。
+
+  其中，在Docker架构中，Docker可以使用公有的Docker Registry，即大家熟知的Docker Hub，如此一来，Docker获取容器镜像文件时，必须通过互联网访问Docker Hub；同时Docker也允许用户构建本地私有的Docker Registry，这样可以保证容器镜像的获取在内网完成。
+
+* Graph
+
+  Graph在Docker架构中扮演已下载容器镜像的保管者，以及已下载容器镜像之间关系的记录者。一方面，Graph存储着本地具有版本信息的文件系统镜像，另一方面也通过GraphDB记录着所有文件系统镜像彼此之间的关系
+
+  其中，GraphDB是一个构建在SQLite之上的小型图数据库，实现了节点的命名以及节点之间关联关系的记录。它仅仅实现了大多数图数据库所拥有的一个小的子集，但是提供了简单的接口表示节点之间的关系。
+
+  同时在Graph的本地目录中，关于每一个的容器镜像，具体存储的信息有：该容器镜像的元数据，容器镜像的大小信息，以及该容器镜像所代表的具体rootfs。
+
+* Driver
+
+  Driver是Docker架构中的**驱动模块**。通过Driver驱动，Docker可以实现对Docker容器执行环境的定制。由于Docker运行的生命周期中，并非用户所有的操作都是针对Docker容器的管理，另外还有关于Docker运行信息的获取，Graph的存储与记录等。因此，为了将Docker容器的管理从Docker Daemon内部业务逻辑中区分开来，设计了Driver层驱动来接管所有这部分请求。
+
+  在Docker Driver的实现中，可以分为以下三类驱动：graphdriver、networkdriver和execdriver。
+
+  * graphdriver主要用于完成容器镜像的管理，包括存储与获取。即当用户需要下载指定的容器镜像时，graphdriver将容器镜像存储在本地的指定目录；同时当用户需要使用指定的容器镜像来创建容器的rootfs时，graphdriver从本地镜像存储目录中获取指定的容器镜像。在graphdriver的初始化过程之前，有4种文件系统或类文件系统在其内部注册，它们分别是aufs、btrfs、vfs和devmapper。而Docker在初始化之时，通过获取系统环境变量”DOCKER_DRIVER”来提取所使用driver的指定类型。而之后所有的graph操作，都使用该driver来执行。
+  * networkdriver的用途是完成Docker容器网络环境的配置，其中包括Docker启动时为Docker环境创建网桥；Docker容器创建时为其创建专属虚拟网卡设备；以及为Docker容器分配IP、端口并与宿主机做端口映射，设置容器防火墙策略等
+  * execdriver作为Docker容器的执行驱动，负责创建容器运行命名空间，负责容器资源使用的统计与限制，负责容器内部进程的真正运行等。在execdriver的实现过程中，原先可以使用LXC驱动调用LXC的接口，来操纵容器的配置以及生命周期，而现在execdriver默认使用native驱动，不依赖于LXC。具体体现在Daemon启动过程中加载的ExecDriverflag参数，该参数在配置文件已经被设为”native”。这可以认为是Docker在1.2版本上一个很大的改变，或者说Docker实现跨平台的一个先兆
+
+* libcontainer
+
+  libcontainer是Docker架构中一个使用Go语言设计实现的库，设计初衷是希望该库可以不依靠任何依赖，直接访问内核中与容器相关的API。
+
+  正是由于libcontainer的存在，Docker可以直接调用libcontainer，而最终操纵容器的namespace、cgroups、apparmor、网络设备以及防火墙规则等。这一系列操作的完成都不需要依赖LXC或者其他包
+
+  另外，libcontainer提供了一整套标准的接口来满足上层对容器管理的需求。或者说，libcontainer屏蔽了Docker上层对容器的直接管理。又由于libcontainer使用Go这种跨平台的语言开发实现，且本身又可以被上层多种不同的编程语言访问，因此很难说，未来的Docker就一定会紧紧地和Linux捆绑在一起。而于此同时，Microsoft在其著名云计算平台Azure中，也添加了对Docker的支持，可见Docker的开放程度与业界的火热度。
+
+  暂不谈Docker，由于libcontainer的功能以及其本身与系统的松耦合特性，很有可能会在其他以容器为原型的平台出现，同时也很有可能催生出云计算领域全新的项目
+
+* Docker container
+
+  Docker container（Docker容器）是Docker架构中服务交付的最终体现形式。
+
+  Docker按照用户的需求与指令，订制相应的Docker容器：
+
+  用户通过指定容器镜像，使得Docker容器可以自定义rootfs等文件系统； 用户通过指定计算资源的配额，使得Docker容器使用指定的计算资源； 用户通过配置网络及其安全策略，使得Docker容器拥有独立且安全的网络环境； 用户通过指定运行的命令，使得Docker容器执行指定的工作。
 
 ## 3. 安装Docker和配置
 
@@ -279,6 +367,8 @@ sudo systemctl restart docker					# 重新启动docker服务
   -P								随机指定端口
   ```
 
+  docker run流程:![Docker_run](./images/Docker_run.png)
+
 * 从容器中退出到主机
 
   ```bash
@@ -289,9 +379,9 @@ sudo systemctl restart docker					# 重新启动docker服务
 * 列出容器
 
   ```bash
-  $ docker ps				# 列出运行中的容器
+  $ docker ps					# 列出运行中的容器
   
-  $ docker ps -a		# 列出所有容器，包含历史运行过的容器
+  $ docker ps -a			# 列出所有容器，包含历史运行过的容器
   
   $ docker ps -a -n=1 # 列出最近使用的一个容器
   
@@ -337,7 +427,7 @@ sudo systemctl restart docker					# 重新启动docker服务
 $  docker run hello-world					# 启动一个docker
 ```
 
-![Docker_run](./images/Docker_run.png)
+
 
 ```bash
 $ docker images			# 查看镜像信息
@@ -348,63 +438,6 @@ $ docker images			# 查看镜像信息
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-* 创建并运行一个docker
-
-  ```bash
-  docker run -d -p 80:80 name
-  # run：	创建并运行一个容器
-  # -d：	放入后台
-  # -p：	端口映射
-  # name：	容器名称
-  ```
-
-* 查看正在运行的容器
-
-  ```bash
-  # 方式一
-  docker container ls
-  
-  # 方式二
-  docker ps
-  
-  # 查看所有容器
-  docker ps -a
-  ```
-
-* 停止容器
-
-  ```bash
-  # 方式一
-  docker stop 容器名称/id
-  
-  # 方式二
-  docker container kill 容器名称/id
-  ```
-
-* 进入容器
-
-  ```bash
-  docker run -it
-  ```
 
 
 
