@@ -299,7 +299,7 @@ sudo systemctl restart docker					# 重新启动docker服务
 * 查看镜像信息
 
   ```bash
-  $ docker images
+  $ docker images [options]
   
   # 输出
   REPOSITORY    TAG       IMAGE ID       CREATED       SIZE
@@ -315,13 +315,14 @@ sudo systemctl restart docker					# 重新启动docker服务
   # docker images可选参数
   -a, --all    		# 列出所有镜像
   -f, --filter 		# 设置过滤条件
+  		--format		# 使用自定义模版设置输出格式
   -q, --quiet  		# 只显示镜像ID
   ```
 
 * 搜索镜像
 
   ```bash
-  $ docker search
+  $ docker search [options] TERM
   
   # 可选参数
   -f,--filter				# 设置搜索条件
@@ -331,8 +332,16 @@ sudo systemctl restart docker					# 重新启动docker服务
 * 下载镜像
 
   ```bash
-  $ docker pull mysql					# 默认下载最新的
-  $ docker pull mysql:5.7			# 下载指定版本的镜像<img src="./images/image-20231018231122262.png" alt="image-20231018231122262"  />
+  $docker pull [options] NAME:VERSION
+  
+  # 可选参数（一般不使用）
+  options：
+  	-a 下载存储库中所有标记的映像
+  	-q 抑制详细信息输出
+  
+  # eg:
+  $ docker pull nvidia/cuda					# 默认下载最新的
+  $ docker pull nvidia/cuda:版本号		# 下载指定版本的镜像
   ```
 
 ![image-20231018231148091](./images/image-20231018231148091.png)
@@ -340,6 +349,8 @@ sudo systemctl restart docker					# 重新启动docker服务
 * 删除镜像
 
   ```bash
+  $ docker rmi [options] IMAGE
+  
   $ docker rmi -f 镜像id/镜像名字							# 删除单个镜像
   $ docker rmi -f 镜像id 镜像id 镜像id ...		# 删除多个镜像
   $ docker rmi -f $(docker images -aq)			# 删除全部容器
@@ -352,11 +363,11 @@ sudo systemctl restart docker					# 重新启动docker服务
 * 新建容器并启动
 
   ```bash
-  $ docker run [可选参数] image
+  $ docker run [options] IMAGE [COMMAND] [ARG...]
   
   # 参数说明
   --name="Name"			设置容器名字
-  -d								后台方式运行
+  -d								后台方式运行，docker使用后台运行，必须有一个前台进程，docker发现没有应用，会自动停止
   -it								使用交互方式运行，进行容器查看内容
   -p								指定容器端口			eg:8080:8080
   			# 使用格式
@@ -379,20 +390,29 @@ sudo systemctl restart docker					# 重新启动docker服务
 * 列出容器
 
   ```bash
-  $ docker ps					# 列出运行中的容器
+  $ docker ps [options]					# 列出运行中的容器
   
-  $ docker ps -a			# 列出所有容器，包含历史运行过的容器
-  
-  $ docker ps -a -n=1 # 列出最近使用的一个容器
-  
-  $ docker ps -q 			# 只显示容器的编号
+  options:
+  	-a 列出所有的容器
+  	-f 条件：设置显示条件
+  	-n num：显示最近的创建的num个容器
+  	-l 显示最近创建的容器
+  	-q 只显示容器id
+  	-s 显示总大小
   ```
 
 * 删除容器
 
   ```bash
+  $ docker rm [options] CONTAINER
+  
+  	-f 删除过滤条件
+  	-l 删除指定的链接
+  	-v 删除与容器关联的匿名卷
+  
+  
   $ docker rm 容器id							# 删除指定容器
-  $ docker rm -f $(docker ps -aq)#删除所有的容器，正在运行的不能删除，强制删除通过-rf
+  $ docker rm -f $(docker ps -aq) # 删除所有的容器，正在运行的不能删除，强制删除通过-rf
   $ docker ps -a -q|xargs docker rm			# 删除所有容器
   ```
 
@@ -405,51 +425,118 @@ sudo systemctl restart docker					# 重新启动docker服务
   docker kill 容器id					# 强制停止指定容器
   ```
 
-* 后台启动容器
+### 4.3 其他命令
 
+* 查看日志
+
+  ```bash
+  $ docker logs [options] CONTAINER_ID
   
+  options:
+  	-f 格式化输出
+    -n num 输出最后n条logs
+    -t 添加时间戳
+  ```
 
+* 查看同容器中的进程信息
 
+  ```bash
+  $ docker top CONTAINER_ID
+  ```
 
+* 查看镜像元数据
 
+  ```bash
+  $ docker inspect [options] CONTAINER_ID
+  ```
 
+* 进入当前正在运行的容器
 
+  ```bash
+  # 方式一，进入容器中开启新的终端
+  $ docker exec [options] CONTAINER COMMAND [ARG...]
+  
+  options:
+  	-d 后台方式运行
+  	-e 设置环境变量，可以对资源进行限制（内存）
+  	-t 分配一个伪tty，交互终端
+  	-u 用户名称
+  	-w 容器内的工作目录
+  	-i 如果没有连接也保持一个标准输入
+  	
+  # 方式二，进入容器正在执行的终端，不会启动新的进程
+  $ docker attach [options] CONTAINER 
+  ```
 
+* 从容器内拷贝文件到主机上
 
+  ```bash
+  $ docker cp CONTAINER_ID:CONTAINER_PATH HOST_PATH
+  ```
 
+* 查看资源占用信息
 
+  ```bash
+  $ docker stats
+  ```
 
+* 提交自己的容器转换为镜像保存到本地
 
+  ```bash
+  $ docker commit [options] CONTAINER：TAG
+  
+  options:
+  	-a 用户名称
+  	-c 将Dockerfile指令应用于创建映像
+  	-m 提交信息
+  	-p 提交期间暂停容器，默认为true
+  ```
 
+## 5. Docker数据卷
 
+### 5.1 数据挂载
+
+将Docker产生的数据，同步到本地。将容器中的目录挂在到宿主机，容器删除时，不影响宿主机数据
 
 ```bash
-$  docker run hello-world					# 启动一个docker
+$ docker run -it -v 主机目录:容器内目录:权限（ro只读，rw读写）				# 会自动创建文件
 ```
 
-
+挂载方式：具名挂载和匿名挂载
 
 ```bash
-$ docker images			# 查看镜像信息
+# 匿名挂载
+-v 容器内路径
+$ docker run -d -P --name cuda -v /ect/nginx nginx
+
+# 查看所有的volume的情况
+$ docker volume ls
+
+# 具名挂载，-v 卷名:容器内路径
+# 查看卷信息
+$ docker volume inspect 卷名
+
+# 所有的docker容器内的卷，没有指定目录的情况下都是在/var/lib/docker/volumes/xxx/_data
 ```
 
-![截屏2023-10-18 20.57.42](./images/截屏2023-10-18 20.57.42.png)
+### 5.2 容器间数据共享
 
+```bash
+$ docker run -it --name 容器名称 --volumes-from 存在容器名称 IMAGE
 
+# 容器间数据共享只要有一个容器存在，则数据依旧存在
+```
 
+## 6. Docker file
 
+由于构建Docker镜像，本质上是命令参数脚本
 
+构建步骤
 
-
-
-
-
-
-
-
-
-
-
+* 编写一个dockerfile文件
+* docker build构建称为一个镜像
+* docker run创建一个容器
+* docker push发布镜像（docker hub、阿里云镜像仓库）
 
 ## 附录
 
