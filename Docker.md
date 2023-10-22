@@ -529,14 +529,160 @@ $ docker run -it --name 容器名称 --volumes-from 存在容器名称 IMAGE
 
 ## 6. Docker file
 
+### 6.1 Dockerfile简介
+
 由于构建Docker镜像，本质上是命令参数脚本
 
 构建步骤
 
 * 编写一个dockerfile文件
+
 * docker build构建称为一个镜像
+
 * docker run创建一个容器
+
 * docker push发布镜像（docker hub、阿里云镜像仓库）
+
+
+### 6.2  Dockerfile构建过程
+
+#### 6.2.1 基础知识
+
+* 每个保留关键字都必须是大写字母
+* 从上到下进行执行
+* #号进行注释
+* 每一行指令都会创建提交一个新的镜像层，并提交
+
+#### 6.2.2 Dockerfile命令
+
+```dockerfile
+FROM 					# 基础镜像，一切从这里开始构建
+MAINTAINER		#	维护者信息，姓名+邮箱(已舍弃) 现在为LABEL
+RUN						# 镜像构建的时需要运行的命令
+ADD						# COPY文件，会自动解压
+WORKDIR				# 设置当前工作目录
+VOLUME				# 设置卷，挂在到主机目录
+EXPOSE				# 指定对外端口
+CMD						# 指定这个容器启动时运行的命令，只有最后一个生效
+ENTRYPOINT		# 指定这个容器启动时运行的命令，可以追加命令
+ONBUILD				# 当构建一个被继承 Dockerfile，这个时候就会运行ONBUILD的指令
+COPY					# 将文件拷贝到镜像中，不会自动解压
+ENV						# 构建的是否设置环境变量
+```
+
+```bash
+$ docker build -f DOCKERFILE_PATH -t 镜像名:[tag]				# 从Dockerfile创建镜像
+```
+
+```bash
+$ docker history IMAGE			# 查看镜像是怎么一步一步构建的
+```
+
+## 7. 发布镜像
+
+* 需要自己Docker HUB账号，进行登陆
+
+```bash
+$ docker login [options] [SERVER]
+
+options:
+	-p  密码
+	-u	用户名
+```
+
+* 上传到Docker HUB
+
+```bash
+$ docker push IMAGE:TAG
+```
+
+* 给镜像添加标签
+
+```bash
+$ docker tag IMAGE_ID IMAGE:TAG
+```
+
+* 发布到阿里云镜像
+
+  * 创建命名空间
+
+  * 创建容器镜像
+  * 阿里云有详细的介绍
+
+* 保存为压缩包和加载
+
+  ```bash
+  $ docker save -o PATH						# 保存镜像为压缩包
+  
+  $ docker load -i PATH						# 加载压缩包为镜像
+  ```
+
+
+## 8. Docker实战
+
+### 8.1 分析YOLOv8Dockerfile
+
+```dockerfile
+# Image is CUDA-optimized for YOLOv8 single/multi-GPU training and inference
+# 通过Dockerfile构建的镜像，用与YOLOv8进行单/多GPU训练和推理
+
+# Start FROM PyTorch image https://hub.docker.com/r/pytorch/pytorch or nvcr.io/nvidia/pytorch:23.03-py3
+# 基础镜像来自pytorch/pytorch:2.1.0-cuda12.1-cudnn8-runtime
+FROM pytorch/pytorch:2.1.0-cuda12.1-cudnn8-runtime
+
+# 构建镜像的时候通过pip安装nvidia-tensorrt包
+RUN pip install --no-cache nvidia-tensorrt --index-url https://pypi.ngc.nvidia.com
+
+# Downloads to user config dir
+# 下载配置文件和资源文件
+ADD https://ultralytics.com/assets/Arial.ttf https://ultralytics.com/assets/Arial.Unicode.ttf /root/.config/Ultralytics/
+
+# Install linux packages
+# g++ required to build 'tflite_support' and 'lap' packages, libusb-1.0-0 required for 'tflite_support' package
+# 构建镜像的shi hou
+RUN apt update \
+    && apt install --no-install-recommends -y gcc git zip curl htop libgl1-mesa-glx libglib2.0-0 libpython3-dev gnupg g++ libusb-1.0-0
+# RUN alias python=python3
+
+# Security updates
+# 进行安全更新
+# https://security.snyk.io/vuln/SNYK-UBUNTU1804-OPENSSL-3314796
+RUN apt upgrade --no-install-recommends -y openssl tar
+
+# Create working directory
+# 创建一个工作目录
+WORKDIR /usr/src/ultralytics
+
+# 构建镜像时，从git下载main分支到容器路径/usr/src/ultralytics
+RUN git clone https://github.com/ultralytics/ultralytics -b main /usr/src/ultralytics
+# 从指定路径下载yolov8n.pt权重到容器路径/usr/src/ultralytics/
+ADD https://github.com/ultralytics/assets/releases/download/v0.0.0/yolov8n.pt /usr/src/ultralytics/
+
+# Install pip packages
+# 安装pip包
+RUN python3 -m pip install --upgrade pip wheel
+# 安装必须的包
+RUN pip install --no-cache -e ".[export]" albumentations comet pycocotools pytest-cov
+
+# Run exports to AutoInstall packages
+RUN yolo export model=tmp/yolov8n.pt format=edgetpu imgsz=32
+RUN yolo export model=tmp/yolov8n.pt format=ncnn imgsz=32
+# Requires <= Python 3.10, bug with paddlepaddle==2.5.0 https://github.com/PaddlePaddle/X2Paddle/issues/991
+RUN pip install --no-cache paddlepaddle==2.4.2 x2paddle
+# Fix error: `np.bool` was a deprecated alias for the builtin `bool` segmentation error in Tests
+RUN pip install --no-cache numpy==1.23.5
+# Remove exported models
+# 删除已经tmp文件夹
+RUN rm -rf tmp
+
+# Set environment variables
+# 设置环境变量
+ENV OMP_NUM_THREADS=1
+# Avoid DDP error "MKL_THREADING_LAYER=INTEL is incompatible with libgomp.so.1 library" https://github.com/pytorch/pytorch/issues/37377
+ENV MKL_THREADING_LAYER=GNU
+```
+
+
 
 ## 附录
 
