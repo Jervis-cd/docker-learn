@@ -367,6 +367,10 @@ sudo systemctl restart docker					# 重新启动docker服务
   
   # 参数说明
   --name="Name"			设置容器名字
+  --network=host		设置网络和主机相同
+  --shm-size xx			设置共享内存
+  --gpus all			容器可使用的gpu
+  --
   -d								后台方式运行，docker使用后台运行，必须有一个前台进程，docker发现没有应用，会自动停止
   -it								使用交互方式运行，进行容器查看内容
   -p								指定容器端口			eg:8080:8080
@@ -639,7 +643,7 @@ ADD https://ultralytics.com/assets/Arial.ttf https://ultralytics.com/assets/Aria
 
 # Install linux packages
 # g++ required to build 'tflite_support' and 'lap' packages, libusb-1.0-0 required for 'tflite_support' package
-# 构建镜像的shi hou
+# 构建镜像的安装依赖
 RUN apt update \
     && apt install --no-install-recommends -y gcc git zip curl htop libgl1-mesa-glx libglib2.0-0 libpython3-dev gnupg g++ libusb-1.0-0
 # RUN alias python=python3
