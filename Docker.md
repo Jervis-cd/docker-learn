@@ -436,7 +436,7 @@ sudo systemctl restart docker # 重新启动docker服务
   $ docker logs [options] CONTAINER_ID
   
   options:
-  	-f  # 格式化输出
+    -f  # 格式化输出
     -n num  # 输出最后n条logs
     -t  # 添加时间戳
   ```
