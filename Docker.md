@@ -280,7 +280,7 @@ sudo systemctl restart docker # 重新启动docker服务
   $ docker version
   ```
 
-  ![截屏2023-10-18 22.09.38](./images/截屏2023-10-18 22.09.38.png)
+  ![截屏2023-10-18 22.09.38](./images/2023-10-18 22.09.38.png)
 
 * 查看Docker详细信息
 
@@ -288,7 +288,7 @@ sudo systemctl restart docker # 重新启动docker服务
   $ docker info
   ```
 
-  ![截屏2023-10-18 22.15.52](./images/截屏2023-10-18 22.15.52.png)
+  ![截屏2023-10-18 22.15.52](./images/2023-10-18 22.15.52.png)
 
 * Docker查看指定命令的帮助文件
 
