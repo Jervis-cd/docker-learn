@@ -229,7 +229,7 @@ Docker利用容器技术，独立运行一个或则一个组应用，容器通�
 * 验证是否安装成功
 
   ```bash
-  sudo systemctl status docker				# 查看docker服务运行状态
+  sudo systemctl status docker  # 查看docker服务运行状态
   ```
 
 ### 3.2 配置Docker
@@ -243,9 +243,9 @@ Docker利用容器技术，独立运行一个或则一个组应用，容器通�
   * 推荐方式为添加docker的用户组，将当前用户添加到组中
 
     ```bash
-    sudo groupadd docker								# 添加用户组
-    sudo gpasswd -a username docker			# 将当前用户添加到用户组
-    newgrp docker												# 更新用户组
+    sudo groupadd docker  # 添加用户组
+    sudo gpasswd -a username docker # 将当前用户添加到用户组
+    newgrp docker # 更新用户组
     ```
 
 #### 3.2.2 配置镜像进行加速
@@ -266,8 +266,8 @@ $ vim /etc/docker/daemon.json
 ```
 
 ```bash
-sudo systemctl daemon-reload					# 重新加载服务的配置文件
-sudo systemctl restart docker					# 重新启动docker服务
+sudo systemctl daemon-reload  # 重新加载服务的配置文件
+sudo systemctl restart docker # 重新启动docker服务
 ```
 
 ## 4. Docker常用命令
@@ -302,21 +302,21 @@ sudo systemctl restart docker					# 重新启动docker服务
   $ docker images [options]
   
   # 输出
-  REPOSITORY    TAG       IMAGE ID       CREATED       SIZE
-  hello-world   latest    feb5d9fea6a5   2 years ago   13.3kB
+  REPOSITORY-TAGIMAGE ID-CREATED-SIZE
+  
   
   # 解释
-  REPOSITORY		镜像的仓库源
-  TAG						镜像的标签
-  IMAGE ID			镜像的id
-  CREATED				镜像的创建时间
-  SIZE					镜像的大小
+  REPOSITORY  #镜像的仓库源
+  TAG         #镜像的标签
+  IMAGE ID    #镜像的id
+  CREATED     #镜像的创建时间
+  SIZE        #镜像的大小
   
   # docker images可选参数
-  -a, --all    		# 列出所有镜像
-  -f, --filter 		# 设置过滤条件
-  		--format		# 使用自定义模版设置输出格式
-  -q, --quiet  		# 只显示镜像ID
+  -a, --all       # 列出所有镜像
+  -f, --filter    # 设置过滤条件
+      --format    # 使用自定义模版设置输出格式
+  -q, --quiet     # 只显示镜像ID
   ```
 
 * 搜索镜像
@@ -325,7 +325,7 @@ sudo systemctl restart docker					# 重新启动docker服务
   $ docker search [options] TERM
   
   # 可选参数
-  -f,--filter				# 设置搜索条件
+  -f,--filter # 设置搜索条件
   eg:docker search cuda -f STARS=3000/docker search --filter=STARS=300
   ```
 
@@ -340,8 +340,8 @@ sudo systemctl restart docker					# 重新启动docker服务
   	-q 抑制详细信息输出
   
   # eg:
-  $ docker pull nvidia/cuda					# 默认下载最新的
-  $ docker pull nvidia/cuda:版本号		# 下载指定版本的镜像
+  $ docker pull nvidia/cuda # 默认下载最新的
+  $ docker pull nvidia/cuda:版本号  # 下载指定版本的镜像
   ```
 
 ![image-20231018231148091](./images/image-20231018231148091.png)
@@ -351,9 +351,9 @@ sudo systemctl restart docker					# 重新启动docker服务
   ```bash
   $ docker rmi [options] IMAGE
   
-  $ docker rmi -f 镜像id/镜像名字							# 删除单个镜像
-  $ docker rmi -f 镜像id 镜像id 镜像id ...		# 删除多个镜像
-  $ docker rmi -f $(docker images -aq)			# 删除全部容器
+  $ docker rmi -f 镜像id/镜像名字 # 删除单个镜像
+  $ docker rmi -f 镜像id 镜像id 镜像id ...  # 删除多个镜像
+  $ docker rmi -f $(docker images -aq)  # 删除全部容器
   ```
 
 ### 4.2 容器命令
@@ -366,20 +366,20 @@ sudo systemctl restart docker					# 重新启动docker服务
   $ docker run [options] IMAGE [COMMAND] [ARG...]
   
   # 参数说明
-  --name="Name"			设置容器名字
-  --network=host		设置网络和主机相同
-  --shm-size xx			设置共享内存
-  --gpus all			容器可使用的gpu
+  --name="Name" #设置容器名字
+  --network=host  #设置网络和主机相同
+  --shm-size xx #设置共享内存
+  --gpus all  #容器可使用的gpu
   --
-  -d								后台方式运行，docker使用后台运行，必须有一个前台进程，docker发现没有应用，会自动停止
-  -it								使用交互方式运行，进行容器查看内容
-  -p								指定容器端口			eg:8080:8080
-  			# 使用格式
-  			-p ip:主机端口:容器端口
-  			-p 主机端口:容器端口
-  			-p 容器端口
-  			容器端口
-  -P								随机指定端口
+  -d  #后台方式运行，docker使用后台运行，必须有一个前台进程，docker发现没有应用，会自动停止
+  -it #使用交互方式运行，进行容器查看内容
+  -p  #指定容器端口 eg:8080:8080
+  		# 使用格式
+  			#-p ip:主机端口:容器端口
+  			#-p 主机端口:容器端口
+  			#-p 容器端口
+  			#容器端口
+  -P  ##随机指定端口
   ```
 
   docker run流程:![Docker_run](./images/Docker_run.png)
@@ -387,14 +387,14 @@ sudo systemctl restart docker					# 重新启动docker服务
 * 从容器中退出到主机
 
   ```bash
-  $ exit						# 容器停止并退出
-  $ ctrl+p+q				# 容器不停止退出
+  $ exit  # 容器停止并退出
+  $ ctrl+p+q  # 容器不停止退出
   ```
 
 * 列出容器
 
   ```bash
-  $ docker ps [options]					# 列出运行中的容器
+  $ docker ps [options] # 列出运行中的容器
   
   options:
   	-a 列出所有的容器
@@ -410,23 +410,22 @@ sudo systemctl restart docker					# 重新启动docker服务
   ```bash
   $ docker rm [options] CONTAINER
   
-  	-f 删除过滤条件
-  	-l 删除指定的链接
-  	-v 删除与容器关联的匿名卷
+  	-f  # 删除过滤条件
+  	-l  # 删除指定的链接
+  	-v  # 删除与容器关联的匿名卷
   
-  
-  $ docker rm 容器id							# 删除指定容器
+  $ docker rm 容器id  # 删除指定容器
   $ docker rm -f $(docker ps -aq) # 删除所有的容器，正在运行的不能删除，强制删除通过-rf
-  $ docker ps -a -q|xargs docker rm			# 删除所有容器
+  $ docker ps -a -q|xargs docker rm	# 删除所有容器
   ```
 
 * 启动（已有的容器）和停止容器
 
   ```bash
-  docker start 容器id					# 启动容器
-  docker restart 容器id				# 重启容器
-  docker stop 容器id					# 停止当前正在运行的容器
-  docker kill 容器id					# 强制停止指定容器
+  docker start 容器id # 启动容器
+  docker restart 容器id # 重启容器
+  docker stop 容器id  # 停止当前正在运行的容器
+  docker kill 容器id  # 强制停止指定容器
   ```
 
 ### 4.3 其他命令
@@ -437,9 +436,9 @@ sudo systemctl restart docker					# 重新启动docker服务
   $ docker logs [options] CONTAINER_ID
   
   options:
-  	-f 格式化输出
-    -n num 输出最后n条logs
-    -t 添加时间戳
+  	-f  # 格式化输出
+    -n num  # 输出最后n条logs
+    -t  # 添加时间戳
   ```
 
 * 查看同容器中的进程信息
@@ -461,12 +460,12 @@ sudo systemctl restart docker					# 重新启动docker服务
   $ docker exec [options] CONTAINER COMMAND [ARG...]
   
   options:
-  	-d 后台方式运行
-  	-e 设置环境变量，可以对资源进行限制（内存）
-  	-t 分配一个伪tty，交互终端
-  	-u 用户名称
-  	-w 容器内的工作目录
-  	-i 如果没有连接也保持一个标准输入
+  	-d # 后台方式运行
+  	-e # 设置环境变量，可以对资源进行限制（内存）
+  	-t # 分配一个伪tty，交互终端
+  	-u # 用户名称
+  	-w # 容器内的工作目录
+  	-i # 如果没有连接也保持一个标准输入
   	
   # 方式二，进入容器正在执行的终端，不会启动新的进程
   $ docker attach [options] CONTAINER 
@@ -490,10 +489,10 @@ sudo systemctl restart docker					# 重新启动docker服务
   $ docker commit [options] CONTAINER：TAG
   
   options:
-  	-a 用户名称
-  	-c 将Dockerfile指令应用于创建映像
-  	-m 提交信息
-  	-p 提交期间暂停容器，默认为true
+  	-a # 用户名称
+  	-c # 将Dockerfile指令应用于创建映像
+  	-m # 提交信息
+  	-p # 提交期间暂停容器，默认为true
   ```
 
 ## 5. Docker数据卷
@@ -560,26 +559,26 @@ $ docker run -it --name 容器名称 --volumes-from 存在容器名称 IMAGE
 #### 6.2.2 Dockerfile命令
 
 ```dockerfile
-FROM 					# 基础镜像，一切从这里开始构建
-MAINTAINER		#	维护者信息，姓名+邮箱(已舍弃) 现在为LABEL
-RUN						# 镜像构建的时需要运行的命令
-ADD						# COPY文件，会自动解压
-WORKDIR				# 设置当前工作目录
-VOLUME				# 设置卷，挂在到主机目录
-EXPOSE				# 指定对外端口
-CMD						# 指定这个容器启动时运行的命令，只有最后一个生效
-ENTRYPOINT		# 指定这个容器启动时运行的命令，可以追加命令
-ONBUILD				# 当构建一个被继承 Dockerfile，这个时候就会运行ONBUILD的指令
-COPY					# 将文件拷贝到镜像中，不会自动解压
-ENV						# 构建的是否设置环境变量
+FROM          # 基础镜像，一切从这里开始构建
+MAINTAINER    #	维护者信息，姓名+邮箱(已舍弃) 现在为LABEL
+RUN           # 镜像构建的时需要运行的命令
+ADD           # COPY文件，会自动解压
+WORKDIR       # 设置当前工作目录
+VOLUME        # 设置卷，挂在到主机目录
+EXPOSE        # 指定对外端口
+CMD           # 指定这个容器启动时运行的命令，只有最后一个生效
+ENTRYPOINT    # 指定这个容器启动时运行的命令，可以追加命令
+ONBUILD       # 当构建一个被继承 Dockerfile，这个时候就会运行ONBUILD的指令
+COPY          # 将文件拷贝到镜像中，不会自动解压
+ENV           # 构建的是否设置环境变量
 ```
 
 ```bash
-$ docker build -f DOCKERFILE_PATH -t 镜像名:[tag]				# 从Dockerfile创建镜像
+$ docker build -f DOCKERFILE_PATH -t 镜像名:[tag] # 从Dockerfile创建镜像
 ```
 
 ```bash
-$ docker history IMAGE			# 查看镜像是怎么一步一步构建的
+$ docker history IMAGE  # 查看镜像是怎么一步一步构建的
 ```
 
 ## 7. 发布镜像
@@ -616,9 +615,9 @@ $ docker tag IMAGE_ID IMAGE:TAG
 * 保存为压缩包和加载
 
   ```bash
-  $ docker save -o PATH						# 保存镜像为压缩包
+  $ docker save -o PATH # 保存镜像为压缩包
   
-  $ docker load -i PATH						# 加载压缩包为镜像
+  $ docker load -i PATH # 加载压缩包为镜像
   ```
 
 
