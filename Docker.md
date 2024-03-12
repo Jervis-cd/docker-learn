@@ -590,7 +590,7 @@ $ docker login [options] [SERVER]
 
 options:
 	-p  密码
-	-u	用户名
+	-u  用户名
 ```
 
 * 上传到Docker HUB
